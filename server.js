@@ -49,32 +49,37 @@ app.get('/api/tasks/status', (req, res) => {
 
 app.post('/api/devices/:name/command', (req, res) => {
   const deviceName = req.params.name;
-  const { action } = req.body; // "on" | "off" | "logical"
+  const { action } = req.body; // "on" | "off" | "logical" | "toggle"
 
   if (!mqttClient.connected) {
     return res.status(500).json({ error: 'MQTT non connecté' });
   }
 
-  // Mode "logical" : on n’autorise ON que si les tâches sont faites
+  let payload;
+
   if (action === 'logical') {
     if (!tasksDone) {
       return res.status(403).json({ error: 'Tâches non terminées' });
     }
-    // ici on décide : ON
-    const topic = `tasklist/${deviceName}/1/set`;
-    mqttClient.publish(topic, '1');
-    return res.json({ ok: true, sent: { topic, payload: '1' } });
+    payload = '1';
+  } else if (action === 'on') {
+    payload = '1';
+  } else if (action === 'off') {
+    payload = '0';
+  } else if (action === 'toggle') {
+    payload = 'toggle';
+  } else {
+    return res.status(400).json({ error: 'action invalide' });
   }
 
-  // Mode direct : "on" / "off"
-  if (action === 'on' || action === 'off') {
-    const payload = action === 'on' ? '1' : '0';
-    const topic = `tasklist/${deviceName}/1/set`;
-    mqttClient.publish(topic, payload);
-    return res.json({ ok: true, sent: { topic, payload } });
-  }
+  const topic = `tasklist/${deviceName}/1/set`;
 
-  return res.status(400).json({ error: 'action invalide' });
+  mqttClient.publish(topic, payload);
+
+  return res.json({
+    ok: true,
+    sent: { topic, payload }
+  });
 });
 
 app.get("/", (req, res) => {
