@@ -77,6 +77,10 @@ app.post('/api/devices/:name/command', (req, res) => {
   return res.status(400).json({ error: 'action invalide' });
 });
 
+app.get("/", (req, res) => {
+  res.send("OK backend up");
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Backend démarré sur port ${PORT}`);
 });
